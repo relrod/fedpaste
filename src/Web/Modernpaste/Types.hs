@@ -1,17 +1,25 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE DeriveFoldable #-}
 {-# LANGUAGE DeriveTraversable #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Web.Modernpaste.Types where
 
 import Control.Applicative
+import Control.Monad.Trans
+import Control.Monad.Trans.Maybe
+import Control.Monad.Reader
 import Data.Aeson
 import qualified Data.Text as T
 import Data.Time (UTCTime)
 
-newtype Modernpaste =
+newtype MPConfig =
   Modernpaste { modernpasteUrl :: String }
   deriving (Eq, Show)
+
+newtype MPResponseT a =
+  MPResponseT (ReaderT MPConfig (MaybeT IO) a)
+  deriving (Monad, Functor, Applicative, MonadReader MPConfig, MonadIO, MonadPlus, Alternative)
 
 data ModernpasteResponse a =
     MPSuccess a

@@ -49,7 +49,7 @@ sysinfo = Sysinfo <$> switch
 pasteOptionsParser :: Parser PasteOptions
 pasteOptionsParser =
   (PasteOptions
-    <$> some (strArgument (metavar "FILES..."))
+    <$> many (strArgument (metavar "FILES..."))
     <*> optional (strOption
                   ( long "title"
                  <> short 't'
@@ -65,17 +65,17 @@ pasteOptionsParser =
                  <> short 'd'
                  <> help "Optional password"
                  <> metavar "PASSWORD" )))
-  <|> pure (PasteOptions [] (Just "Anonymous Paste") (Just "text") Nothing)
 
 parser :: Parser Args
 parser =
   (Args
    <$> globalOpts
-   <*> subparser (
-      ( command "sysinfo"
-        (info sysinfo
-          (progDesc "Paste system information")))))
-  <|> (Args <$> globalOpts <*> (Paste <$> pasteOptionsParser))
+   <*> ((subparser (
+           ( command "sysinfo"
+             (info sysinfo
+              (progDesc "Paste system information")))))
+        <|> (Paste <$> pasteOptionsParser)))
+
 
 confirm :: IO Bool
 confirm = do
@@ -135,5 +135,5 @@ opts = info (parser <**> helper) idm
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  execRes <- execParser opts
+  execRes <- customExecParser (prefs noBacktrack) opts
   run execRes

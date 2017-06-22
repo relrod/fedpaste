@@ -62,6 +62,7 @@ pasteOptionsParser =
                  <> metavar "LANGUAGE" ))
     <*> optional (strOption
                   ( long "password"
+                 <> short 'p'
                  <> short 'd'
                  <> help "Optional password"
                  <> metavar "PASSWORD" )))
@@ -135,5 +136,5 @@ opts = info (parser <**> helper) idm
 main :: IO ()
 main = do
   hSetBuffering stdout NoBuffering
-  execRes <- customExecParser (prefs noBacktrack) opts
+  execRes <- customExecParser (prefs (noBacktrack <> showHelpOnError)) opts
   run execRes

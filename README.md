@@ -1,9 +1,11 @@
-# fpasteng
+# modern-paste
 
 `fpaste`, but rewritten.
 
-fpasteng is meant to be the next generation of `fpaste` - the command-line
-interface to https://paste.fedoraproject.org/.
+This is a library (`modern-paste`) for accessing the Modern Paste API. There
+is also a program called `fedpaste` which will eventually be pulled out into
+its own repository, which acts as the official command-line paste client for
+Fedora's Modern Paste instance.
 
 (More docs coming soon)
 

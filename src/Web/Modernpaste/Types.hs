@@ -19,7 +19,8 @@ newtype MPConfig =
 
 newtype MPResponseT a =
   MPResponseT (ReaderT MPConfig (MaybeT IO) a)
-  deriving (Monad, Functor, Applicative, MonadReader MPConfig, MonadIO, MonadPlus, Alternative)
+  deriving (Monad, Functor, Applicative, MonadReader MPConfig, MonadIO,
+            MonadPlus, Alternative)
 
 data ModernpasteResponse a =
     MPSuccess a

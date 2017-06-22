@@ -19,12 +19,12 @@
 --
 -- @
 --   let req =
---     createPaste (CreatePasteRequest "main = print 1234"
---                  Nothing
---                  (Just "Hello, Haskell!")
---                  (Just "haskell")
---                  Nothing)
---   cfg = Modernpaste "https://modernpaste.stg.fedoraproject.org"
+--         createPaste (CreatePasteRequest "main = print 1234"
+--                      Nothing
+--                      (Just "Hello, Haskell!")
+--                      (Just "haskell")
+--                      Nothing)
+--       cfg = Modernpaste "https://modernpaste.stg.fedoraproject.org"
 --   runMPResponseT c req
 -- @
 ------------------------------------------------------------------------------

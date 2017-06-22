@@ -11,10 +11,11 @@ data Info =
        } deriving (Eq, Show)
 
 data InfoResult =
-    InfoResult { resCommand :: T.Text
+    InfoResult { resName :: T.Text
+               , resCommand :: T.Text
                , resOut :: T.Text
                }
-  | InfoError
+  | InfoError { resNameErr :: T.Text }
   deriving (Eq, Show)
 
 runCmd :: T.Text -> S.Sh (T.Text, Int)
@@ -31,15 +32,15 @@ runInfo info@(Info name' (h:tl)) = do
                S.print_stderr False $
                runCmd h
   if rc == 0
-    then return $ InfoResult h res
+    then return $ InfoResult name' h res
     else runInfo (info { commands = tl })
-runInfo _ = return InfoError
+runInfo (Info name' _) = return (InfoError name')
 
-prettyInfo :: T.Text -> InfoResult -> T.Text
-prettyInfo name InfoError =
-  "* Unable to determine " <> name <> "\n\n"
-prettyInfo name (InfoResult cmd out) =
-  "* " <> name <> " (" <> cmd <> "):\n\n" <>
+prettyInfo :: InfoResult -> T.Text
+prettyInfo (InfoError name') =
+  "* Unable to determine " <> name' <> "\n\n"
+prettyInfo (InfoResult name' cmd out) =
+  "* " <> name' <> " (" <> cmd <> "):\n\n" <>
   T.unlines (fmap (\t -> "     " <> t) (T.lines out)) <> "\n\n"
 
 osRelease :: Info
@@ -185,7 +186,8 @@ infoList =
   , last20Pkgs
   ]
 
---runInfoList :: IO T.Text
-runInfoList =
-  mapM_ (\info -> runInfo info >>= putStrLn . T.unpack . prettyInfo (name info))
-        infoList
+runInfoList :: IO T.Text
+runInfoList = do
+  allInfo <- mapM runInfo infoList
+  let allInfoPretty = fmap prettyInfo allInfo
+  return (T.unlines allInfoPretty)

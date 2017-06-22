@@ -107,7 +107,7 @@ topMemHogs :: Info
 topMemHogs = Info "Top 5 Memory hogs" ["ps axuScnh | sort -rnk4 | head -5"]
 
 disk :: Info
-disk = Info "Disk space usage" ["df -hT''', 'df -h', 'df'"]
+disk = Info "Disk space usage" ["df -hT", "df -h", "df"]
 
 block :: Info
 block = Info "Block devices" ["blkid", "/sbin/blkid"]

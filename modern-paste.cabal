@@ -25,6 +25,7 @@ library
                      , http-client-tls >= 0.3 && < 1
                      , http-types >= 0.8 && < 0.10
                      , mtl >= 2 && < 3
+                     , shelly >= 1.4 && < 2
                      , text >= 1 && < 2
                      , time >= 1.5 && < 2
                      , transformers >= 0.4 && < 0.6
@@ -37,7 +38,7 @@ executable fedpaste
                      , bytestring >= 0.10 && < 0.11
                      , http-client >= 0.5 && < 1
                      , http-client-tls >= 0.3 && < 1
-                     , http-types >= 0.8 && < 0.10
+                     , http-types >= 0.8 && < 1
                      , mtl >= 2 && < 3
                      , optparse-applicative >= 0.11 && < 1
                      , shelly >= 1.4 && < 2

@@ -93,7 +93,7 @@ data CreatePasteResponse =
                       , createRespPasteIdRepr :: PasteIdRepr
                       , createRespContents :: T.Text
                       , createRespAttachments :: [Attachment]
-                      --, createRespDeactivationToken :: Maybe T.Text -- ^ New
+                      -- , createRespDeactivationToken :: Maybe T.Text
                       , createRespUrl :: T.Text
                       } deriving (Eq, Show)
 

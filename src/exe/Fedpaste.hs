@@ -2,6 +2,7 @@
 module Main where
 
 import Control.Applicative
+import Control.Monad (when)
 import Data.Char (toLower)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -10,6 +11,8 @@ import Options.Applicative
 import Web.Modernpaste.Client
 import Web.Modernpaste.Types
 import Sysinfo
+import System.Directory (doesFileExist)
+import System.Exit
 import System.IO
 
 data Args = Args GlobalOpts Command
@@ -17,7 +20,7 @@ data Args = Args GlobalOpts Command
 
 data Command =
     Paste { pasteOptions :: PasteOptions }
-  | Sysinfo { sysinfoNoConfirm :: Bool }
+  | Sysinfo
   deriving (Eq, Show)
 
 data PasteOptions =
@@ -28,7 +31,8 @@ data PasteOptions =
                  } deriving (Eq, Show)
 
 data GlobalOpts =
-  GlobalOpts { server :: String }
+  GlobalOpts { server :: String
+             , noconfirm :: Bool }
   deriving (Eq, Show)
 
 globalOpts :: Parser GlobalOpts
@@ -40,11 +44,9 @@ globalOpts = GlobalOpts
      <> help "The modern-paste server URL"
      <> value "https://paste.fedoraproject.org/"
       )
+  <*> switch ( long "no-confirm"
+            <> help "Do NOT require confirmation")
 
-sysinfo :: Parser Command
-sysinfo = Sysinfo <$> switch
-                        ( long "no-confirm"
-                       <> help "Do NOT require confirmation" )
 
 pasteOptionsParser :: Parser PasteOptions
 pasteOptionsParser =
@@ -73,7 +75,7 @@ parser =
    <$> globalOpts
    <*> ((subparser (
            ( command "sysinfo"
-             (info sysinfo
+             (info (pure Sysinfo)
               (progDesc "Paste system information")))))
         <|> (Paste <$> pasteOptionsParser)))
 
@@ -91,11 +93,11 @@ ifM :: Monad m => m Bool -> m a -> m a -> m a
 ifM mb t f = mb >>= \x -> if x then t else f
 
 run :: Args -> IO ()
-run (Args global (Sysinfo noconfirm)) = do
+run (Args global Sysinfo) = do
   putStrLn "Obtaining system information. Please stand by."
   info <- runInfoList
   T.putStrLn $ info
-  confirmation <- if noconfirm then return True else confirm
+  confirmation <- if noconfirm global then return True else confirm
   if confirmation
     then paste global (createReq (PasteOptions
                                   []
@@ -108,8 +110,26 @@ run (Args global (Paste pasteOptions@(PasteOptions [] _ _ _))) = do
   let req = createReq pasteOptions input
   paste global req
 run (Args global (Paste pasteOptions@(PasteOptions files _ _ _))) = do
-  input <- mapM T.readFile files
-  mapM_ (paste global . createReq pasteOptions) input
+  filesExist' <- mapM doesFileExist files
+  let filesExist = zip files filesExist'
+  mapM_ warnIfNotExist filesExist
+  if (not . all (== True) $ filesExist')
+    then exitFailure
+    else do
+      putStrLn $ "Pasting all of: " ++ show files
+      confirmation <- if noconfirm global then return True else confirm
+      if confirmation
+        then mapM_ (pasteFile global pasteOptions) files
+        else putStrLn "Aborting."
+
+warnIfNotExist :: (String, Bool) -> IO ()
+warnIfNotExist (f, False) = putStrLn $ f ++ " does not exist. Will abort."
+warnIfNotExist _ = return ()
+
+pasteFile :: GlobalOpts -> PasteOptions -> String -> IO ()
+pasteFile global pasteOptions filename = do
+  input <- T.readFile filename
+  paste global . createReq pasteOptions $ input
 
 createReq :: PasteOptions -> T.Text -> CreatePasteRequest
 createReq (PasteOptions files title language password) text =

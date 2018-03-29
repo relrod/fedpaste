@@ -36,6 +36,7 @@ executable fedpaste
   build-depends:       base >= 4 && < 5
                      , aeson >= 1 && < 2
                      , bytestring >= 0.10 && < 0.11
+                     , directory >= 1.2 && < 2
                      , http-client >= 0.5 && < 1
                      , http-client-tls >= 0.3 && < 1
                      , http-types >= 0.8 && < 1
@@ -49,3 +50,4 @@ executable fedpaste
   hs-source-dirs:      src/exe
   default-language:    Haskell2010
   main-is:             Fedpaste.hs
+  other-modules:       Sysinfo

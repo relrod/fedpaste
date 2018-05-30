@@ -50,4 +50,4 @@ executable fedpaste
   hs-source-dirs:      src/exe
   default-language:    Haskell2010
   main-is:             Fedpaste.hs
-  other-modules:       Sysinfo
+  other-modules:       Language, Shorten, Sysinfo

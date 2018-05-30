@@ -4,16 +4,21 @@ module Main where
 import Control.Applicative
 import Control.Monad (when)
 import Data.Char (toLower)
+import Data.List (find, isSuffixOf)
+import Data.Maybe (fromMaybe, isJust, maybe)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Options.Applicative
 import Web.Modernpaste.Client
 import Web.Modernpaste.Types
-import Sysinfo
 import System.Directory (doesFileExist)
 import System.Exit
 import System.IO
+
+import Language
+import Shorten
+import Sysinfo
 
 data Args = Args GlobalOpts Command
   deriving (Eq, Show)
@@ -25,9 +30,9 @@ data Command =
 
 data PasteOptions =
     PasteOptions { files :: [String]
-                 , title :: Maybe String
-                 , language :: Maybe String
-                 , password :: Maybe String
+                 , title :: Maybe T.Text
+                 , language :: Maybe T.Text
+                 , password :: Maybe T.Text
                  } deriving (Eq, Show)
 
 data GlobalOpts =
@@ -50,7 +55,7 @@ globalOpts = GlobalOpts
 
 pasteOptionsParser :: Parser PasteOptions
 pasteOptionsParser =
-  (PasteOptions
+  PasteOptions
     <$> many (strArgument (metavar "FILES..."))
     <*> optional (strOption
                   ( long "title"
@@ -67,17 +72,17 @@ pasteOptionsParser =
                  <> short 'p'
                  <> short 'd'
                  <> help "Optional password"
-                 <> metavar "PASSWORD" )))
+                 <> metavar "PASSWORD" ))
 
 parser :: Parser Args
 parser =
-  (Args
-   <$> globalOpts
-   <*> ((subparser (
-           ( command "sysinfo"
-             (info (pure Sysinfo)
-              (progDesc "Paste system information")))))
-        <|> (Paste <$> pasteOptionsParser)))
+  Args
+    <$> globalOpts
+    <*> (subparser
+          ( command "sysinfo"
+            (info (pure Sysinfo)
+              (progDesc "Paste system information")))
+          <|> (Paste <$> pasteOptionsParser))
 
 
 confirm :: IO Bool
@@ -96,7 +101,7 @@ run :: Args -> IO ()
 run (Args global Sysinfo) = do
   putStrLn "Obtaining system information. Please stand by."
   info <- runInfoList
-  T.putStrLn $ info
+  T.putStrLn info
   confirmation <- if noconfirm global then return True else confirm
   if confirmation
     then paste global (createReq (PasteOptions
@@ -113,7 +118,7 @@ run (Args global (Paste pasteOptions@(PasteOptions files _ _ _))) = do
   filesExist' <- mapM doesFileExist files
   let filesExist = zip files filesExist'
   mapM_ warnIfNotExist filesExist
-  if (not . all (== True) $ filesExist')
+  if not . all (== True) $ filesExist'
     then exitFailure
     else do
       putStrLn $ "Pasting all of: " ++ show files
@@ -128,16 +133,16 @@ warnIfNotExist _ = return ()
 
 pasteFile :: GlobalOpts -> PasteOptions -> String -> IO ()
 pasteFile global pasteOptions filename = do
+  let pasteLanguage =
+        case language pasteOptions of
+          Nothing -> Just (extension (T.pack filename))
+          Just x -> Just x
   input <- T.readFile filename
-  paste global . createReq pasteOptions $ input
+  paste global . createReq (pasteOptions { language = pasteLanguage }) $ input
 
 createReq :: PasteOptions -> T.Text -> CreatePasteRequest
 createReq (PasteOptions files title language password) text =
-  CreatePasteRequest text
-                     Nothing
-                     (fmap T.pack title)
-                     (fmap T.pack language)
-                     (fmap T.pack password)
+  CreatePasteRequest text Nothing title language password
 
 paste :: GlobalOpts -> CreatePasteRequest -> IO ()
 paste global req = do
@@ -148,7 +153,11 @@ paste global req = do
     Just (MPError (ErrorResponse failure msg)) ->
       error $ "Error from paste server (" ++ T.unpack failure ++ "): " ++
         T.unpack msg
-    Just (MPSuccess resp) -> print resp
+    Just (MPSuccess resp) -> do
+      let url = createRespUrl resp
+      T.putStr url
+      shortened <- shorten url
+      putStrLn $ " -> " ++ shortened
 
 opts :: ParserInfo Args
 opts = info (parser <**> helper) idm
